@@ -47,11 +47,10 @@ write_plist() {
   local template="$3" output="$4" label="$5" executable="$6" stdout_log="$7" stderr_log="$8"
   sed \
     -e "s|__LABEL__|$label|g" \
-    -e "s|__EXECUTABLE__|$executable|g" \
     -e "s|__STDOUT_LOG__|$stdout_log|g" \
     -e "s|__STDERR_LOG__|$stderr_log|g" \
     "$template" | awk \
-    -v combo="$COMBO" \
+    -v combo="$COMBO" -v exe="$executable" \
     -v tm="$TAHOE_MORNING_START" -v td="$TAHOE_DAY_START" -v te="$TAHOE_EVENING_START" -v tn="$TAHOE_NIGHT_START" \
     -v sm="$SEQUOIA_MORNING_START" -v ss="$SEQUOIA_SUNRISE_START" -v sn="$SEQUOIA_NIGHT_START" '
       function emit(hhmm, h, m) {
@@ -63,6 +62,36 @@ write_plist() {
         print "      <key>Minute</key>"
         print "      <integer>" m "</integer>"
         print "    </dict>"
+      }
+      function program_args() {
+        print "  <key>ProgramArguments</key>"
+        print "  <array>"
+        print "    <string>" exe "</string>"
+        print "    <string>auto</string>"
+        print "    <string>--combo</string>"
+        print "    <string>" combo "</string>"
+        if (combo == "sequoia") {
+          print "    <string>--morning-start</string>"
+          print "    <string>" sm "</string>"
+          print "    <string>--sunrise-start</string>"
+          print "    <string>" ss "</string>"
+          print "    <string>--night-start</string>"
+          print "    <string>" sn "</string>"
+        } else {
+          print "    <string>--morning-start</string>"
+          print "    <string>" tm "</string>"
+          print "    <string>--day-start</string>"
+          print "    <string>" td "</string>"
+          print "    <string>--evening-start</string>"
+          print "    <string>" te "</string>"
+          print "    <string>--night-start</string>"
+          print "    <string>" tn "</string>"
+        }
+        print "  </array>"
+      }
+      /__PROGRAM_ARGUMENTS__/ {
+        program_args()
+        next
       }
       /__START_CALENDAR_INTERVAL__/ {
         print "  <key>StartCalendarInterval</key>"

@@ -6,11 +6,7 @@
   <key>Label</key>
   <string>__LABEL__</string>
 
-  <key>ProgramArguments</key>
-  <array>
-    <string>__EXECUTABLE__</string>
-    <string>auto</string>
-  </array>
+__PROGRAM_ARGUMENTS__
 
   <key>RunAtLoad</key>
   <true/>

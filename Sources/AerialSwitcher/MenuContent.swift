@@ -3,7 +3,6 @@ import SwiftUI
 
 struct MenuContent: View {
     let model: AppModel
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         ForEach(statusLines, id: \.self) { Text($0) }
@@ -11,8 +10,7 @@ struct MenuContent: View {
         Button(model.config.paused ? "Resume" : "Pause") { model.togglePause() }
             .disabled(model.selectedSet == nil)
         Button("Settings…") {
-            NSApp.activate()
-            openWindow(id: "settings")
+            NotificationCenter.default.post(name: .showSettings, object: nil)
         }
         .keyboardShortcut(",")
         Divider()

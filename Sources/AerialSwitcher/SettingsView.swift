@@ -184,9 +184,9 @@ private struct GeneralPane: View {
 private struct AboutPane: View {
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: "mountain.2.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(.tint)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
             Text("Aerial Switcher").font(.title2.bold())
             Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")")
                 .foregroundStyle(.secondary)

@@ -1,50 +1,78 @@
-# Aerial Switcher
+<p align="center">
+  <img src="Assets/icon.png" width="128" alt="Aerial Switcher icon">
+</p>
 
-> A CLI tool that switches macOS Aerial wallpapers by directly modifying the wallpaper store.
+<h1 align="center">Aerial Switcher</h1>
 
-## Introduction
+<p align="center">
+  Let your Mac's Landscape Aerial follow the time of day.<br>
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-`aerial-switcher` works by rewriting macOS's Aerial wallpaper store and optionally restarting `WallpaperAgent`.
+---
 
-It uses a LaunchAgent to schedule switching. Combos and time points are generated dynamically from `.make-settings`.
+macOS ships Landscape Aerials filmed at different times of day — Tahoe Morning, Day, Evening and Night; Sequoia Morning and Night; Golden Gate Day, Sunset, Evening and Night. But it never switches between them: you pick one and it stays.
 
-**Currently supports:**
+Aerial Switcher is a small menu bar app that fills that gap. Pick a set, and your desktop shows its morning shot in the morning and its night shot at night.
 
-- Wallpaper combos: `tahoe`, `sequoia`
-- Custom switching time points
+<p align="center">
+  <img src="Assets/settings.png" width="460" alt="Settings window">
+</p>
 
-## Requirements
+## Features
 
-- macOS 15+
-- Swift toolchain
+- **One set, on schedule.** Choose a set and the wallpaper changes as each part of the day begins. It also catches up when your Mac starts, wakes or you log in.
+- **Your times.** Each phase has a start time you can change. By default the set's first shot starts at 06:00 and the rest follow the clock: day at 12:00, sunset at 17:00, evening at 18:00, night at 21:00.
+- **Downloads what's missing.** Videos that aren't on your Mac yet are downloaded from Apple, so the desktop never falls back to the default wallpaper.
+- **Easy to undo.** Pause switching any time, or restore the wallpaper you had before.
+- **Stays out of the way.** A menu bar icon showing the current part of the day, and an optional Launch at Login.
 
-## Installation
+The sets are found in macOS's own Aerial catalog, so new day-cycle sets from Apple show up on their own. Sets that aren't a day cycle, like Sonoma, aren't offered.
+
+## Install
+
+1. Download the latest `AerialSwitcher-x.y.z.zip` from [Releases](https://github.com/YnNJU/aerial-switcher/releases) and unzip it.
+2. Move **Aerial Switcher** to your Applications folder and open it.
+3. The app isn't notarized by Apple, so the first launch is blocked. Open **System Settings › Privacy & Security**, scroll down and click **Open Anyway**.
+
+Requires macOS 15 or later.
+
+## Use
+
+On first launch the Settings window opens. Choose a set; any missing videos start downloading, and the wallpaper switches once the current one is ready.
+
+From then on, the app lives in the menu bar. Click the icon to pause or open Settings. If the icon is hidden, behind the notch or a menu bar manager, open the app again to bring up Settings.
+
+## How it works
+
+macOS keeps the wallpaper choice in `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`. When it's time to switch, Aerial Switcher writes the next Aerial there and restarts `WallpaperAgent` so the change takes effect. Before the first change, it saves a copy of the original file, which is what **Restore** puts back.
+
+Videos are downloaded from Apple's servers into the folder macOS uses for Aerials, `~/Library/Application Support/com.apple.wallpaper/aerials/videos`, just as System Settings would.
+
+This relies on how macOS stores wallpapers today, which Apple doesn't document. A future macOS update could break it; if that happens, please [open an issue](https://github.com/YnNJU/aerial-switcher/issues).
+
+## Build from source
+
+With Xcode or the Command Line Tools installed:
 
 ```bash
 git clone https://github.com/YnNJU/aerial-switcher.git
 cd aerial-switcher
-make install
+./scripts/bundle.sh
 ```
 
-## Usage
+This builds a universal app into `dist/`. To run the tests:
 
-Use the following `make` commands:
+```bash
+swift test
+```
 
-|Command|Description|
-|---|---|
-|`make install`|Build, install, enable, and run once|
-|`make uninstall`|Disable and remove the LaunchAgent plist|
-|`make enable`|Enable the installed LaunchAgent|
-|`make disable`|Disable the LaunchAgent|
-|`make combo`|Choose Tahoe or Sequoia combo|
-|`make time`|Change saved HHmm time points for the current combo|
-|`make default`|Reset time points to defaults|
-|`make reload`|Re-enable the LaunchAgent|
-|`make help`|Show this help|
+With only the Command Line Tools, the testing plugin has to be pointed at explicitly:
 
-> Saved settings live in `.make-settings`.
+```bash
+swift test -Xswiftc -plugin-path -Xswiftc /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing
+```
 
-## Notes
+## License
 
-- This is a hack. It depends on macOS's current Aerial implementation (manifest, store layout, provider ID, labels). If Apple changes any of these, it may break.
-- Aerial wallpapers must already exist on the machine.
+[MIT](LICENSE)

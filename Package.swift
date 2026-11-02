@@ -7,14 +7,11 @@ let package = Package(
         .macOS(.v15),
     ],
     products: [
-        .executable(
-            name: "aerial-switcher",
-            targets: ["AerialSwitcher"]
-        ),
+        .executable(name: "AerialSwitcher", targets: ["AerialSwitcher"]),
     ],
     targets: [
-        .executableTarget(
-            name: "AerialSwitcher"
-        ),
+        .target(name: "AerialCore"),
+        .executableTarget(name: "AerialSwitcher", dependencies: ["AerialCore"]),
+        .testTarget(name: "AerialCoreTests", dependencies: ["AerialCore"]),
     ]
 )

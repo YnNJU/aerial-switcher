@@ -21,8 +21,14 @@ final class SettingsWindow {
 
     func show() {
         let window = window ?? makeWindow()
-        NSApp.activate()
+        // In the Dock and ⌘Tab while Settings is open; back to menu bar only once closed.
+        NSApp.setActivationPolicy(.regular)
+        // From the menu bar the app isn't active, and a plain activate() is only a request
+        // the system may turn down; bring the window up regardless, then activate once the
+        // policy change has taken effect.
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+        DispatchQueue.main.async { NSApp.activate(ignoringOtherApps: true) }
     }
 
     private func makeWindow() -> NSWindow {
@@ -45,6 +51,9 @@ final class SettingsWindow {
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
         window.isReleasedWhenClosed = false
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+            MainActor.assumeIsolated { _ = NSApp.setActivationPolicy(.accessory) }
+        }
         self.window = window
         hosting.view.layoutSubtreeIfNeeded()
         resize()

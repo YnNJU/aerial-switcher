@@ -56,8 +56,13 @@ enum Fixtures {
         let home = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let paths = Paths(home: home)
         try FileManager.default.createDirectory(at: paths.store.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try PropertyListSerialization.data(fromPropertyList: store, format: .binary, options: 0).write(to: paths.store)
+        try write(store, to: paths)
         return paths
+    }
+
+    /// Replaces the store, as when the user picks a wallpaper in System Settings.
+    static func write(_ store: [String: Any], to paths: Paths) throws {
+        try PropertyListSerialization.data(fromPropertyList: store, format: .binary, options: 0).write(to: paths.store)
     }
 
     static func download(_ ids: [String], into paths: Paths) throws {

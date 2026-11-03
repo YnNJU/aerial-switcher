@@ -35,7 +35,8 @@ public struct WallpaperStore: Sendable {
 
     /// Shows `assetID` on every display and space. Desktop entries that aren't an Aerial are
     /// replaced; screen saver entries are only updated if they already show an Aerial.
-    /// The store as it was before the first change is kept so it can be restored.
+    /// The user's own wallpaper is kept so it can be restored: the store as it was before
+    /// the first change, refreshed whenever the user has picked something else since.
     @discardableResult
     public func setAerial(_ assetID: String, now: Date = Date()) throws -> Int {
         let store = try load()
@@ -73,19 +74,36 @@ public struct WallpaperStore: Sendable {
         }
 
         guard count > 0 else { throw AerialError("No wallpaper entries were found in the wallpaper store.") }
-        try backupIfNeeded()
+        try backUpUsersWallpaper()
         let data = try PropertyListSerialization.data(fromPropertyList: store, format: .binary, options: 0)
         try data.write(to: paths.store, options: .atomic)
+        try Data(assetID.utf8).write(to: paths.lastSet, options: .atomic)
         return count
     }
 
     public var hasBackup: Bool { FileManager.default.fileExists(atPath: paths.storeBackup.path) }
 
-    /// Puts back the wallpaper the user had before this app first changed it.
-    public func restoreBackup() throws {
-        let data = try Data(contentsOf: paths.storeBackup)
-        try data.write(to: paths.store, options: .atomic)
-        try FileManager.default.removeItem(at: paths.storeBackup)
+    /// Whether the wallpaper showing is the one this app last set, not one the user picked since.
+    public var isShowingOwnChange: Bool {
+        guard let data = try? Data(contentsOf: paths.lastSet) else {
+            // 1.0.0 kept a backup but didn't record its change; any Aerial counts as its own.
+            guard hasBackup, case .aerial = try? state() else { return false }
+            return true
+        }
+        return (try? state()) == .aerial(assetID: String(decoding: data, as: UTF8.self))
+    }
+
+    /// Puts back the user's wallpaper, unless they have already picked another one since
+    /// this app's last change. Returns whether the store was changed.
+    @discardableResult
+    public func restoreBackup() throws -> Bool {
+        let restore = hasBackup && isShowingOwnChange
+        if restore {
+            try Data(contentsOf: paths.storeBackup).write(to: paths.store, options: .atomic)
+        }
+        try? FileManager.default.removeItem(at: paths.storeBackup)
+        try? FileManager.default.removeItem(at: paths.lastSet)
+        return restore
     }
 
     /// WallpaperAgent only picks up store changes when it restarts.
@@ -110,10 +128,10 @@ public struct WallpaperStore: Sendable {
         return store
     }
 
-    private func backupIfNeeded() throws {
-        guard !hasBackup else { return }
+    private func backUpUsersWallpaper() throws {
+        guard !(hasBackup && isShowingOwnChange) else { return }
         try FileManager.default.createDirectory(at: paths.appSupport, withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: paths.store, to: paths.storeBackup)
+        try Data(contentsOf: paths.store).write(to: paths.storeBackup, options: .atomic)
     }
 
     private func scopes(in store: NSDictionary) -> [NSMutableDictionary] {

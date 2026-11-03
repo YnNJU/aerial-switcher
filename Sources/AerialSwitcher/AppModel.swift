@@ -17,7 +17,6 @@ final class AppModel {
     private(set) var result: SyncResult?
     private(set) var error: String?
     private(set) var download: Download?
-    private(set) var hasBackup = false
     private(set) var launchAtLogin = SMAppService.mainApp.status == .enabled
     private(set) var now = Date()
 
@@ -32,7 +31,6 @@ final class AppModel {
     init() {
         config = Config.load(from: paths.config)
         switcher = Switcher(paths: paths)
-        hasBackup = switcher.store.hasBackup
         loadSets()
         startClock()
         observeSystemEvents()
@@ -50,17 +48,22 @@ final class AppModel {
     func selectSet(_ id: String) {
         guard id != config.setID else { return }
         config.setID = id
+        // Picking a set means wanting to see it.
+        config.enabled = true
+        config.paused = false
         save()
         cancelDownload()
         downloadMissing()
     }
 
-    func setTime(_ time: TimeOfDay, for phase: DayPhase) {
+    /// While dragging, `commit` is false: the schedule on screen follows, but it's only saved,
+    /// and the wallpaper only switched, once the drag ends.
+    func setTime(_ time: TimeOfDay, for phase: DayPhase, commit: Bool = true) {
         guard let set = selectedSet else { return }
         var schedule = config.schedule(for: set)
         schedule.times[phase] = time
         config.schedules[set.id] = schedule
-        save()
+        if commit { save() }
     }
 
     func resetSchedule() {
@@ -69,18 +72,23 @@ final class AppModel {
         save()
     }
 
-    func togglePause() {
-        config.paused.toggle()
+    func setPaused(_ paused: Bool) {
+        guard paused != config.paused else { return }
+        config.paused = paused
         save()
     }
 
-    func restoreOriginalWallpaper() {
+    /// Turning off puts back the wallpaper from before the app took over; turning on again
+    /// takes over again (keeping a fresh copy of whatever is showing then).
+    func setEnabled(_ enabled: Bool) {
+        guard enabled != config.enabled else { return }
+        config.enabled = enabled
+        // Pause keeps an Aerial on screen; off and back on there is none to keep.
+        config.paused = false
+        save()
+        guard !enabled else { return }
         do {
-            config.paused = true
-            save()
-            try switcher.store.restoreBackup()
-            WallpaperStore.reloadAgent()
-            hasBackup = false
+            if try switcher.store.restoreBackup() { WallpaperStore.reloadAgent() }
         } catch {
             self.error = error.localizedDescription
         }
@@ -121,7 +129,6 @@ final class AppModel {
             self.error = error.localizedDescription
             shownPhase = nil
         }
-        hasBackup = switcher.store.hasBackup
     }
 
     private func loadSets() {

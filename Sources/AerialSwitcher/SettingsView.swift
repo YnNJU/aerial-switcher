@@ -93,63 +93,57 @@ private struct AerialsPane: View {
     let model: AppModel
 
     var body: some View {
-        Form {
-            LabeledContent("Set") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Picker("Set", selection: Binding(
-                        get: { model.config.setID ?? "" },
-                        set: { model.selectSet($0) }
-                    )) {
-                        if model.config.setID == nil { Text("Choose…").tag("") }
-                        ForEach(model.sets) { Text($0.name).tag($0.id) }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
+        VStack(alignment: .leading, spacing: 20) {
+            Form {
+                LabeledContent("Set") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Picker("Set", selection: Binding(
+                            get: { model.config.setID ?? "" },
+                            set: { model.selectSet($0) }
+                        )) {
+                            if model.config.setID == nil { Text("Choose…").tag("") }
+                            ForEach(model.sets) { Text($0.name).tag($0.id) }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
 
-                    if let download = model.download {
-                        ProgressView(value: (Double(download.index) + download.fraction) / Double(download.count))
-                            .frame(width: 200)
-                        Caption(downloadTitle(download))
-                    } else {
-                        Caption("One place, filmed at different times of day.")
+                        if let download = model.download {
+                            ProgressView(value: (Double(download.index) + download.fraction) / Double(download.count))
+                                .frame(width: 200)
+                            Caption(downloadTitle(download))
+                        } else {
+                            Caption("One place, filmed at different times of day.")
+                        }
                     }
                 }
             }
+            .formStyle(.columns)
 
             if let set = model.selectedSet, let schedule = model.schedule {
-                Spacer().frame(height: 12)
-                ForEach(set.aerials) { aerial in
-                    DatePicker(aerial.phase.title, selection: time(for: aerial.phase, in: schedule), displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.field)
-                }
-                LabeledContent("") {
-                    Button("Reset to Defaults") { model.resetSchedule() }
-                        .disabled(model.config.schedules[set.id] == nil)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Schedule").font(.headline)
+                        Spacer()
+                        Button("Reset to Defaults") { model.resetSchedule() }
+                            .controlSize(.small)
+                            .disabled(model.config.schedules[set.id] == nil)
+                    }
+                    ScheduleBar(schedule: schedule, current: model.currentPhase) { phase, time, commit in
+                        model.setTime(time, for: phase, commit: commit)
+                    }
+                    Caption("Drag a handle to change when that part of the day begins.")
                 }
             }
 
             if let error = model.error {
-                LabeledContent("") {
-                    Text(error).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
-                }
+                Text(error).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
             }
         }
-        .formStyle(.columns)
     }
 
     private func downloadTitle(_ download: AppModel.Download) -> String {
         let size = download.totalBytes.map { " · " + ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? ""
         return "Downloading \(download.index + 1) of \(download.count)\(size)"
-    }
-
-    private func time(for phase: DayPhase, in schedule: Schedule) -> Binding<Date> {
-        Binding(
-            get: {
-                let time = schedule.times[phase] ?? TimeOfDay(hour: 0)
-                return Calendar.current.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: Date()) ?? Date()
-            },
-            set: { model.setTime(TimeOfDay($0), for: phase) }
-        )
     }
 }
 
@@ -161,19 +155,15 @@ private struct GeneralPane: View {
             LabeledContent("Startup") {
                 Toggle("Launch at Login", isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
             }
-            LabeledContent("Switching") {
+            LabeledContent("Wallpaper") {
                 VStack(alignment: .leading, spacing: 6) {
-                    Toggle("Paused", isOn: Binding(get: { model.config.paused }, set: { _ in model.togglePause() }))
+                    Toggle("Switch Wallpaper", isOn: Binding(get: { model.config.enabled }, set: { model.setEnabled($0) }))
                         .disabled(model.selectedSet == nil)
-                    Caption("Keeps the current wallpaper until resumed.")
-                }
-            }
-            if model.hasBackup {
-                LabeledContent("Original Wallpaper") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Button("Restore") { model.restoreOriginalWallpaper() }
-                        Caption("Puts back the wallpaper you had before and pauses switching.")
-                    }
+                    Caption("When off, the wallpaper you had before is put back.")
+                    Toggle("Pause", isOn: Binding(get: { model.config.paused }, set: { model.setPaused($0) }))
+                        .disabled(model.selectedSet == nil || !model.config.enabled)
+                        .padding(.top, 4)
+                    Caption("Keeps the Aerial showing now until unpaused.")
                 }
             }
         }
@@ -182,6 +172,14 @@ private struct GeneralPane: View {
 }
 
 private struct AboutPane: View {
+    /// The GitHub mark (Octicons `mark-github`), as SVG: AppKit draws it, no image file needed.
+    static let githubMark: NSImage = {
+        let svg = #"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>"#
+        let image = NSImage(data: Data(svg.utf8)) ?? NSImage()
+        image.isTemplate = true
+        return image
+    }()
+
     var body: some View {
         VStack(spacing: 8) {
             Image(nsImage: NSApp.applicationIconImage)
@@ -192,7 +190,16 @@ private struct AboutPane: View {
                 .foregroundStyle(.secondary)
             Text("Follows a Landscape Aerial through the day.")
                 .padding(.top, 4)
-            Link("github.com/YnNJU/aerial-switcher", destination: URL(string: "https://github.com/YnNJU/aerial-switcher")!)
+            Link(destination: URL(string: "https://github.com/YnNJU/aerial-switcher")!) {
+                Image(nsImage: Self.githubMark)
+                    .renderingMode(.template)
+                    .resizable()
+                    .frame(width: 22, height: 22)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Aerial Switcher on GitHub")
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
     }

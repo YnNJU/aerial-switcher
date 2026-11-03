@@ -6,12 +6,25 @@ public struct Config: Codable, Equatable, Sendable {
     public var setID: String?
     /// Custom times per set, so switching sets back and forth keeps each set's edits.
     public var schedules: [String: Schedule] = [:]
+    /// Off: no switching, and the wallpaper from before the app is put back.
+    public var enabled = true
+    /// Paused: no switching, the wallpaper showing stays.
     public var paused = false
 
-    public init(setID: String? = nil, schedules: [String: Schedule] = [:], paused: Bool = false) {
+    public init(setID: String? = nil, schedules: [String: Schedule] = [:], enabled: Bool = true, paused: Bool = false) {
         self.setID = setID
         self.schedules = schedules
+        self.enabled = enabled
         self.paused = paused
+    }
+
+    /// Settings saved by an older version may lack newer keys; those get their defaults.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        setID = try container.decodeIfPresent(String.self, forKey: .setID)
+        schedules = try container.decodeIfPresent([String: Schedule].self, forKey: .schedules) ?? [:]
+        enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        paused = try container.decodeIfPresent(Bool.self, forKey: .paused) ?? false
     }
 
     public func schedule(for set: AerialSet) -> Schedule {

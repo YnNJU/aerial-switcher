@@ -44,7 +44,7 @@ public struct Schedule: Codable, Equatable, Sendable {
     }
 
     /// Phases ordered by start time; ties keep day order and the later phase wins.
-    var entries: [(phase: DayPhase, start: TimeOfDay)] {
+    public var entries: [(phase: DayPhase, start: TimeOfDay)] {
         times.map { ($0.key, $0.value) }.sorted { ($0.start, $0.phase) < ($1.start, $1.phase) }
     }
 

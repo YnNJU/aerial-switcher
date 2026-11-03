@@ -3,6 +3,7 @@ import Foundation
 public enum SyncResult: Equatable, Sendable {
     case switched(to: Aerial)
     case alreadyShowing(Aerial)
+    case disabled
     case paused
     case noSetChosen
     /// The Aerial for the current phase isn't on disk yet; switching now would show the
@@ -28,6 +29,7 @@ public struct Switcher: Sendable {
     }
 
     public func sync(set: AerialSet?, config: Config, at date: Date = Date(), calendar: Calendar = .current) throws -> SyncResult {
+        guard config.enabled else { return .disabled }
         guard !config.paused else { return .paused }
         guard let set, let target = aerial(for: set, config: config, at: date, calendar: calendar) else { return .noSetChosen }
         guard videos.isDownloaded(target) else { return .notDownloaded(target) }

@@ -22,9 +22,9 @@ Aerial Switcher is a small menu bar app that fills that gap. Pick a set, and you
 ## Features
 
 - **One set, on schedule.** Choose a set and the wallpaper changes as each part of the day begins. It also catches up when your Mac starts, wakes or you log in.
-- **Your times.** Each phase has a start time you can change. By default the set's first shot starts at 06:00 and the rest follow the clock: day at 12:00, sunset at 17:00, evening at 18:00, night at 21:00.
+- **Your times.** Drag the handles on a 24-hour bar to set when each part of the day begins. By default the set's first shot starts at 06:00 and the rest follow the clock: day at 12:00, sunset at 17:00, evening at 18:00, night at 21:00.
 - **Downloads what's missing.** Videos that aren't on your Mac yet are downloaded from Apple, so the desktop never falls back to the default wallpaper.
-- **Easy to undo.** Pause switching any time, or restore the wallpaper you had before.
+- **Easy to undo.** Pause to keep the Aerial showing now, or turn switching off to get back the wallpaper you had before — the one you picked most recently.
 - **Stays out of the way.** A menu bar icon showing the current part of the day, and an optional Launch at Login.
 
 The sets are found in macOS's own Aerial catalog, so new day-cycle sets from Apple show up on their own. Sets that aren't a day cycle, like Sonoma, aren't offered.
@@ -41,11 +41,11 @@ Requires macOS 15 or later.
 
 On first launch the Settings window opens. Choose a set; any missing videos start downloading, and the wallpaper switches once the current one is ready.
 
-From then on, the app lives in the menu bar. Click the icon to pause or open Settings. If the icon is hidden, behind the notch or a menu bar manager, open the app again to bring up Settings.
+From then on, the app lives in the menu bar. Its menu switches sets, pauses, turns switching on and off, and opens Settings. If the icon is hidden, behind the notch or a menu bar manager, open the app again to bring up Settings.
 
 ## How it works
 
-macOS keeps the wallpaper choice in `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`. When it's time to switch, Aerial Switcher writes the next Aerial there and restarts `WallpaperAgent` so the change takes effect. Before the first change, it saves a copy of the original file, which is what **Restore** puts back.
+macOS keeps the wallpaper choice in `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`. When it's time to switch, Aerial Switcher writes the next Aerial there and restarts `WallpaperAgent` so the change takes effect. Before taking over, it saves a copy of the file as you left it, which is what turning switching off puts back. If you pick another wallpaper yourself in the meantime, that one is kept instead.
 
 Videos are downloaded from Apple's servers into the folder macOS uses for Aerials, `~/Library/Application Support/com.apple.wallpaper/aerials/videos`, just as System Settings would.
 

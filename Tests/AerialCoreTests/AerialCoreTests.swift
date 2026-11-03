@@ -94,6 +94,36 @@ import Testing
         #expect(!store.hasBackup)
     }
 
+    @Test func backsUpAWallpaperPickedSince() throws {
+        let paths = try Fixtures.paths(store: Fixtures.store(Fixtures.imageChoice))
+        let store = WallpaperStore(paths: paths)
+        try store.setAerial("A")
+        // The user picks the system default by hand; the next switch keeps that instead.
+        try Fixtures.write(Fixtures.store(Fixtures.defaultChoice), to: paths)
+        try store.setAerial("B")
+        try store.restoreBackup()
+        #expect(try store.state() == .systemDefault)
+    }
+
+    @Test func leavesAWallpaperPickedSinceOnRestore() throws {
+        let paths = try Fixtures.paths(store: Fixtures.store(Fixtures.imageChoice))
+        let store = WallpaperStore(paths: paths)
+        try store.setAerial("A")
+        try Fixtures.write(Fixtures.store(Fixtures.defaultChoice), to: paths)
+        #expect(try store.restoreBackup() == false)
+        #expect(try store.state() == .systemDefault)
+        #expect(!store.hasBackup)
+    }
+
+    @Test func restoresABackupFromVersion1_0_0() throws {
+        let paths = try Fixtures.paths(store: Fixtures.store(Fixtures.imageChoice))
+        let store = WallpaperStore(paths: paths)
+        try store.setAerial("A")
+        try FileManager.default.removeItem(at: paths.lastSet)
+        #expect(try store.restoreBackup())
+        #expect(try store.state() == .other)
+    }
+
     @Test func leavesAnImageScreenSaverAlone() throws {
         var scope = Fixtures.store(Fixtures.imageChoice)["AllSpacesAndDisplays"] as! [String: Any]
         scope["Idle"] = ["Content": ["Choices": [Fixtures.imageChoice]]]
@@ -141,10 +171,13 @@ import Testing
         #expect(try WallpaperStore(paths: paths).state() == .other)
     }
 
-    @Test func respectsPauseAndCustomTimes() throws {
+    @Test func respectsOffPauseAndCustomTimes() throws {
         let paths = try Fixtures.paths(store: Fixtures.store(Fixtures.imageChoice))
         try Fixtures.download(["TA-NIGHT"], into: paths)
         var config = config
+        config.enabled = false
+        #expect(try switcher(paths).sync(set: set, config: config, at: Fixtures.date(13), calendar: Fixtures.calendar) == .disabled)
+        config.enabled = true
         config.paused = true
         #expect(try switcher(paths).sync(set: set, config: config, at: Fixtures.date(13), calendar: Fixtures.calendar) == .paused)
         config.paused = false
@@ -160,6 +193,12 @@ import Testing
         try config.save(to: url)
         #expect(Config.load(from: url) == config)
         #expect(try String(contentsOf: url, encoding: .utf8).contains("\"morning\" : \"06:30\""))
+    }
+
+    @Test func readsSettingsFromVersion1_0_0() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID()).json")
+        try Data(#"{"paused": true, "schedules": {}, "setID": "tahoe"}"#.utf8).write(to: url)
+        #expect(Config.load(from: url) == Config(setID: "tahoe", enabled: true, paused: true))
     }
 
     @Test func missingFileGivesDefaults() {

@@ -29,6 +29,8 @@ public struct Paths: Sendable {
 
     public var config: URL { appSupport.appendingPathComponent("config.json") }
     public var storeBackup: URL { appSupport.appendingPathComponent("Index.original.plist") }
+    /// The Aerial this app last put on screen, to tell its own change from the user's.
+    public var lastSet: URL { appSupport.appendingPathComponent("LastSet.txt") }
     /// Videos being downloaded, moved into `videos` once complete.
     public var partialDownloads: URL { appSupport.appendingPathComponent("Downloads") }
 }

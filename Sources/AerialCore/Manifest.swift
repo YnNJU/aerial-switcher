@@ -54,7 +54,8 @@ public struct AerialSet: Identifiable, Hashable, Sendable {
 }
 
 public enum Manifest {
-    public static func load(from url: URL) throws -> [AerialSet] {
+    /// Names are in the first of `preferredLanguages` that macOS has them in.
+    public static func load(from url: URL, preferredLanguages: [String] = Locale.preferredLanguages) throws -> [AerialSet] {
         let data: Data
         do {
             data = try Data(contentsOf: url)
@@ -62,7 +63,7 @@ public enum Manifest {
             throw AerialError("Couldn't read the Aerial manifest. Open System Settings › Wallpaper once so macOS downloads it.")
         }
         return try sets(from: data, strings: Strings(contentsOf: url.deletingLastPathComponent()
-            .appendingPathComponent("TVIdleScreenStrings.bundle/Contents/Resources/Localizable.nocache.loctable")))
+            .appendingPathComponent("TVIdleScreenStrings.bundle/Contents/Resources/Localizable.nocache.loctable"), preferredLanguages: preferredLanguages))
     }
 
     /// Finds the day-cycle sets: subcategories with at least two Aerials whose English names
@@ -131,13 +132,13 @@ public struct Strings: Sendable {
         preferred = Bundle.preferredLocalizations(from: Array(tables.keys), forPreferences: preferredLanguages).first
     }
 
-    init(contentsOf url: URL) {
+    init(contentsOf url: URL, preferredLanguages: [String]) {
         let plist = (try? Data(contentsOf: url)).flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) }
         // Tables can hold non-string entries (plural rules, metadata); keep only the names.
         let tables = (plist as? [String: Any] ?? [:]).compactMapValues { table in
             (table as? [String: Any])?.compactMapValues { $0 as? String }
         }
-        self.init(tables)
+        self.init(tables, preferredLanguages: preferredLanguages)
     }
 
     func english(_ key: String) -> String? { tables["en"]?[key] }

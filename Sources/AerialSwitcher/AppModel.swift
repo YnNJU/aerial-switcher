@@ -94,11 +94,17 @@ final class AppModel {
         }
     }
 
+    func setLanguage(_ language: AppLanguage) {
+        Localization.shared.language = language
+        // The set names come from macOS, in the language asked for.
+        loadSets()
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         do {
             if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
         } catch {
-            self.error = "Couldn't change Launch at Login: \(error.localizedDescription)"
+            self.error = tr("Couldn't change Launch at Login: %@", error.localizedDescription)
         }
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
@@ -109,7 +115,7 @@ final class AppModel {
         do {
             try config.save(to: paths.config)
         } catch {
-            self.error = "Couldn't save settings: \(error.localizedDescription)"
+            self.error = tr("Couldn't save settings: %@", error.localizedDescription)
         }
         sync(force: true)
     }
@@ -133,7 +139,7 @@ final class AppModel {
 
     private func loadSets() {
         do {
-            sets = try Manifest.load(from: paths.manifest)
+            sets = try Manifest.load(from: paths.manifest, preferredLanguages: Localization.shared.preferredLanguages)
         } catch {
             self.error = error.localizedDescription
         }
@@ -191,7 +197,7 @@ final class AppModel {
                         }
                     }
                 } catch {
-                    failure = "Downloading \(aerial.label) failed: \(error.localizedDescription)"
+                    failure = tr("Downloading %1$@ failed: %2$@", aerial.label, error.localizedDescription)
                     break
                 }
             }

@@ -43,7 +43,7 @@ struct ScheduleBar: View {
                         RoundedRectangle(cornerRadius: 3)
                             .fill(entry.phase.color)
                             .frame(width: 10, height: 10)
-                        Text(entry.phase.title)
+                        Text(entry.phase.name)
                             .fontWeight(entry.phase == current ? .semibold : .regular)
                         Text(entry.start.description)
                             .monospacedDigit()
@@ -112,7 +112,7 @@ struct ScheduleBar: View {
             .onHover { inside in
                 if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
             }
-            .help("\(phase.title) starts at \(entries[index].start)")
+            .help(tr("%1$@ starts at %2$@", phase.name, entries[index].start.description))
     }
 }
 

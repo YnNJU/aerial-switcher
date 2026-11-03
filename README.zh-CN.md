@@ -5,15 +5,15 @@
 <h1 align="center">Aerial Switcher</h1>
 
 <p align="center">
-  让 Mac 的风景航拍壁纸跟着一天的时间走。<br>
+  让航拍壁纸随时间自动切换。<br>
   <a href="README.md">English</a>
 </p>
 
 ---
 
-macOS 自带的风景（Landscape）航拍壁纸，很多是同一个地方在不同时段拍的：Tahoe 有清晨、白天、傍晚、夜晚，Sequoia 有清晨和夜晚，Golden Gate 有白天、日落、傍晚、夜晚。但系统从不在它们之间切换，你选了哪个，就一直是哪个。
+macOS 自带的 Landscape 航拍壁纸，有些是同一地点不同时段的成套壁纸。例如 Tahoe、Sequoia 和 Golden Gate，都有不同时段的版本，但 macOS 不能自动切换它们。
 
-Aerial Switcher 是一个小巧的菜单栏 App，专门补上这一块：选一组壁纸，早上桌面就是清晨那段，晚上就是夜晚那段。
+Aerial Switcher 是一个菜单栏 App，可以按照设定的时间自动切换这些壁纸。
 
 <p align="center">
   <img src="Assets/settings.png" width="460" alt="设置窗口">
@@ -21,35 +21,53 @@ Aerial Switcher 是一个小巧的菜单栏 App，专门补上这一块：选一
 
 ## 功能
 
-- **一组壁纸，按时切换**：选好一组后，每到一个时段开始，壁纸就自动切换。开机、唤醒、登录时也会立即对齐到当前时段。
-- **时间自己定**：在一条 24 小时的时间轴上拖动把手，就能调整每个时段的开始时间。默认第一段从 06:00 开始，其余按常见时间：白天 12:00、日落 17:00、傍晚 18:00、夜晚 21:00。
-- **自动补齐视频**：还没下载到本机的视频，会自动从 Apple 下载，桌面不会退回默认壁纸。
-- **随时撤回**：暂停可以保留当前这段航拍；关掉切换则恢复原来的壁纸，而且是你最近一次换的那张。
-- **不打扰**：只有一个菜单栏图标，显示当前时段；可选开机自动启动。
-
-可选的壁纸组直接读取自 macOS 的航拍壁纸目录，Apple 以后新增的同类壁纸组会自动出现。像 Sonoma 这种不是按时段拍摄的组不会列出。
+- **按时切换**：按时间自动切换同一组航拍壁纸，支持开机、唤醒、登录后同步。
+- **自定义时间**：在一条 24 小时的时间轴上拖动把手，调整各时段时间。
+- **自动下载**：自动下载尚未安装的视频。
+- **随时撤回**：暂停可以保留当前这段航拍；关掉切换则恢复原来的壁纸。
+- **不打扰**：只有一个菜单栏图标，显示当前时段；可选开机自启。
 
 ## 安装
+需要 macOS 15 或更高版本。
 
 1. 从 [Releases](https://github.com/YnNJU/aerial-switcher/releases) 下载最新的 `AerialSwitcher-x.y.z.zip` 并解压。
-2. 把 **Aerial Switcher** 拖进"应用程序"文件夹，然后打开。
-3. 这个 App 没有经过 Apple 公证，第一次打开会被拦下。打开 **系统设置 › 隐私与安全性**，滚动到下方，点 **仍要打开**。
+2. 把 **Aerial Switcher** 拖进「应用程序」文件夹，然后打开。
 
-需要 macOS 15 或更高版本。
+应用目前未经 Apple 公证，首次启动可能被 macOS 拦截，可以在「系统设置 › 隐私与安全性」，滚动到下方，选择「**仍要打开」**。
 
 ## 使用
 
-第一次打开会弹出设置窗口。选一组壁纸后，缺少的视频会开始下载，当前时段的视频下好后壁纸就会切换过去。
+首次启动时会打开设置窗口。选择壁纸组后，应用会自动下载缺少的视频，并切换至当前时段对应的壁纸。
 
-之后 App 常驻在菜单栏，菜单里可以切换壁纸组、暂停、开关切换，以及打开设置。如果图标被刘海或菜单栏管理工具挡住了，再打开一次 App 就会弹出设置窗口。
+之后可以通过菜单栏图标切换壁纸组、暂停或关闭自动切换，以及修改时间设置。
 
-## 原理
+如果菜单栏图标被隐藏，重新打开应用即可进入设置窗口。
 
-macOS 把壁纸设置存在 `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`。到了切换时间，Aerial Switcher 把下一段航拍写进这个文件，再重启 `WallpaperAgent` 让它生效。接管前会先备份你当时的设置，关掉切换时就用这份备份恢复。如果期间你自己换过壁纸，则保留你换的那张。
+默认切换时间为：
 
-视频从 Apple 的服务器下载，放进 macOS 存放航拍视频的目录 `~/Library/Application Support/com.apple.wallpaper/aerials/videos`，和在系统设置里点下载的效果一样。
+- 清晨：06:00
+- 白天：12:00
+- 日落：17:00
+- 傍晚：18:00
+- 夜晚：21:00
 
-这些做法依赖 macOS 目前存储壁纸的方式，Apple 并没有公开说明，以后的系统更新可能让它失效。遇到问题请[提 issue](https://github.com/YnNJU/aerial-switcher/issues)。
+所有时间均可在设置中调整。
+
+## 实现
+
+macOS 把壁纸设置存在：
+
+ `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`
+
+Aerial Switcher 在指定时间更新配置，并重启 `WallpaperAgent` 生效。
+
+应用会在接管壁纸前备份原有配置。关闭自动切换时恢复原有壁纸；如果用户期间手动修改过壁纸，则保留用户的修改。
+
+缺少的航拍视频从 Apple 服务器下载至系统目录：
+
+ `~/Library/Application Support/com.apple.wallpaper/aerials/videos`
+
+**注意：**这些做法依赖 macOS 未公开的壁纸配置机制，未来的系统更新可能让它失效。遇到问题请[提 issue](https://github.com/YnNJU/aerial-switcher/issues)。
 
 ## 从源码构建
 

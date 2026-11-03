@@ -4,11 +4,11 @@ import SwiftUI
 enum SettingsTab: String, CaseIterable {
     case aerials, general, about
 
-    var title: String {
+    @MainActor var title: String {
         switch self {
-        case .aerials: "Aerials"
-        case .general: "General"
-        case .about: "About"
+        case .aerials: tr("Aerials")
+        case .general: tr("General")
+        case .about: tr("About")
         }
     }
 
@@ -56,6 +56,7 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { onSizeChange($0) }
         .onChange(of: tab, initial: true) { onTabChange(tab) }
+        .onChange(of: Localization.shared.language) { onTabChange(tab) }
         // While the window animates to the new size, keep the content pinned to the top
         // (minHeight 0: a taller tab is cut off at the bottom rather than re-centered).
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .top)
@@ -95,14 +96,14 @@ private struct AerialsPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Form {
-                LabeledContent("Set") {
+                LabeledContent(tr("Set")) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Picker("Set", selection: Binding(
+                        Picker(tr("Set"), selection: Binding(
                             get: { model.config.setID ?? "" },
                             set: { model.selectSet($0) }
                         )) {
-                            if model.config.setID == nil { Text("Choose…").tag("") }
-                            ForEach(model.sets) { Text($0.name).tag($0.id) }
+                            if model.config.setID == nil { Text(tr("Choose…")).tag("") }
+                            ForEach(model.sets) { Text(tr($0.name)).tag($0.id) }
                         }
                         .labelsHidden()
                         .fixedSize()
@@ -112,7 +113,7 @@ private struct AerialsPane: View {
                                 .frame(width: 200)
                             Caption(downloadTitle(download))
                         } else {
-                            Caption("One place, filmed at different times of day.")
+                            Caption(tr("One place, filmed at different times of day."))
                         }
                     }
                 }
@@ -122,28 +123,28 @@ private struct AerialsPane: View {
             if let set = model.selectedSet, let schedule = model.schedule {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("Schedule").font(.headline)
+                        Text(tr("Schedule")).font(.headline)
                         Spacer()
-                        Button("Reset to Defaults") { model.resetSchedule() }
+                        Button(tr("Reset to Defaults")) { model.resetSchedule() }
                             .controlSize(.small)
                             .disabled(model.config.schedules[set.id] == nil)
                     }
                     ScheduleBar(schedule: schedule, current: model.currentPhase) { phase, time, commit in
                         model.setTime(time, for: phase, commit: commit)
                     }
-                    Caption("Drag a handle to change when that part of the day begins.")
+                    Caption(tr("Drag a handle to change when that part of the day begins."))
                 }
             }
 
             if let error = model.error {
-                Text(error).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+                Text(tr(error)).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
     private func downloadTitle(_ download: AppModel.Download) -> String {
         let size = download.totalBytes.map { " · " + ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? ""
-        return "Downloading \(download.index + 1) of \(download.count)\(size)"
+        return tr("Downloading %1$@ of %2$@", "\(download.index + 1)", "\(download.count)") + size
     }
 }
 
@@ -152,19 +153,26 @@ private struct GeneralPane: View {
 
     var body: some View {
         Form {
-            LabeledContent("Startup") {
-                Toggle("Launch at Login", isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
+            LabeledContent(tr("Startup")) {
+                Toggle(tr("Launch at Login"), isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
             }
-            LabeledContent("Wallpaper") {
+            LabeledContent(tr("Wallpaper")) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Toggle("Switch Wallpaper", isOn: Binding(get: { model.config.enabled }, set: { model.setEnabled($0) }))
+                    Toggle(tr("Switch Wallpaper"), isOn: Binding(get: { model.config.enabled }, set: { model.setEnabled($0) }))
                         .disabled(model.selectedSet == nil)
-                    Caption("When off, the wallpaper you had before is put back.")
-                    Toggle("Pause", isOn: Binding(get: { model.config.paused }, set: { model.setPaused($0) }))
+                    Caption(tr("When off, the wallpaper you had before is put back."))
+                    Toggle(tr("Pause"), isOn: Binding(get: { model.config.paused }, set: { model.setPaused($0) }))
                         .disabled(model.selectedSet == nil || !model.config.enabled)
                         .padding(.top, 4)
-                    Caption("Keeps the Aerial showing now until unpaused.")
+                    Caption(tr("Keeps the Aerial showing now until unpaused."))
                 }
+            }
+            LabeledContent(tr("Language")) {
+                Picker(tr("Language"), selection: Binding(get: { Localization.shared.language }, set: { model.setLanguage($0) })) {
+                    ForEach(AppLanguage.allCases, id: \.self) { Text($0.name).tag($0) }
+                }
+                .labelsHidden()
+                .fixedSize()
             }
         }
         .formStyle(.columns)
@@ -186,9 +194,10 @@ private struct AboutPane: View {
                 .resizable()
                 .frame(width: 96, height: 96)
             Text("Aerial Switcher").font(.title2.bold())
-            Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")")
+            Text(tr("Version %@", Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"))
                 .foregroundStyle(.secondary)
-            Text("Follows a Landscape Aerial through the day.")
+            Text(tr("Automatically switch aerial wallpaper with the time of day."))
+                .multilineTextAlignment(.center)
                 .padding(.top, 4)
             Link(destination: URL(string: "https://github.com/YnNJU/aerial-switcher")!) {
                 Image(nsImage: Self.githubMark)
@@ -198,7 +207,7 @@ private struct AboutPane: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("Aerial Switcher on GitHub")
+            .help(tr("Aerial Switcher on GitHub"))
             .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)

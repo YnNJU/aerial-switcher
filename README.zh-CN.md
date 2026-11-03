@@ -28,7 +28,7 @@ Aerial Switcher 是一个菜单栏 App，可以按照设定的时间自动切换
 - **不打扰**：只有一个菜单栏图标，显示当前时段；可选开机自启。
 
 ## 安装
-需要 macOS 15 或更高版本。
+需要 macOS 26 或更高版本。
 
 1. 从 [Releases](https://github.com/YnNJU/aerial-switcher/releases) 下载最新的 `AerialSwitcher-x.y.z.zip` 并解压。
 2. 把 **Aerial Switcher** 拖进「应用程序」文件夹，然后打开。

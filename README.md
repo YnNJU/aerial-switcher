@@ -28,7 +28,7 @@ Aerial Switcher is a menu bar app that switches between these wallpapers at sche
 - **Out of the way**: A single menu bar icon shows the current period, with optional launch at login.
 
 ## Installation
-Requires macOS 15 or later.
+Requires macOS 26 or later.
 
 1. Download the latest `AerialSwitcher-x.y.z.zip` from [Releases](https://github.com/YnNJU/aerial-switcher/releases) and unzip it.
 2. Move **Aerial Switcher** to the Applications folder and open it.

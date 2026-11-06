@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WallpaperState: Equatable, Sendable {
+public enum WallpaperState: Hashable, Sendable {
     case aerial(assetID: String)
     /// The macOS default wallpaper. It is itself an Aerial, but stored without an asset ID.
     case systemDefault
@@ -24,13 +24,15 @@ public struct WallpaperStore: Sendable {
         self.paths = paths
     }
 
+    /// What every desktop shows. Scopes that disagree, as when one display was set on its
+    /// own in System Settings, count as `.other`: the system default scope alone can name
+    /// an Aerial that no display shows.
     public func state() throws -> WallpaperState {
-        var sawDefault = false
-        for choice in desktopChoices(in: try load()) {
+        let states = Set(desktopChoices(in: try load()).map { choice -> WallpaperState in
             if let assetID = Self.assetID(of: choice) { return .aerial(assetID: assetID) }
-            if choice["Provider"] as? String == "default" { sawDefault = true }
-        }
-        return sawDefault ? .systemDefault : .other
+            return choice["Provider"] as? String == "default" ? .systemDefault : .other
+        })
+        return states.count == 1 ? states.first! : .other
     }
 
     /// Shows `assetID` on every display and space. Desktop entries that aren't an Aerial are
@@ -134,14 +136,16 @@ public struct WallpaperStore: Sendable {
         try Data(contentsOf: paths.store).write(to: paths.storeBackup, options: .atomic)
     }
 
+    /// Every dictionary holding entries. Per-display and per-space scopes nest: with
+    /// "Show on all Spaces" off, a space keeps its own `Default` and `Displays.<display>`.
     private func scopes(in store: NSDictionary) -> [NSMutableDictionary] {
-        var scopes = ["AllSpacesAndDisplays", "SystemDefault"].compactMap { store[$0] as? NSMutableDictionary }
-        for key in ["Displays", "Spaces"] {
-            if let container = store[key] as? NSDictionary {
-                scopes += container.allValues.compactMap { $0 as? NSMutableDictionary }
-            }
+        let entryKeys = Self.desktopEntries + Self.screenSaverEntries
+        func collect(_ value: Any) -> [NSMutableDictionary] {
+            guard let dictionary = value as? NSMutableDictionary else { return [] }
+            if entryKeys.contains(where: { dictionary[$0] != nil }) { return [dictionary] }
+            return dictionary.allValues.flatMap(collect)
         }
-        return scopes
+        return ["AllSpacesAndDisplays", "SystemDefault", "Displays", "Spaces"].flatMap { store[$0].map(collect) ?? [] }
     }
 
     private func desktopChoices(in store: NSDictionary) -> [NSDictionary] {

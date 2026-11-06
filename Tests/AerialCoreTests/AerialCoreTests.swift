@@ -164,6 +164,47 @@ import Testing
         #expect(!WallpaperStore(paths: paths).hasBackup)
     }
 
+    /// Each display set on its own in System Settings: no all-displays scope, and the
+    /// system default scope can name the target while the display shows something else.
+    @Test func switchesADisplaySetOnItsOwn() throws {
+        let aerial = { (id: String) in Fixtures.choice(provider: "com.apple.wallpaper.choice.aerials", config: ["assetID": id]) }
+        let display: [String: Any] = [
+            "Desktop": ["Content": ["Choices": [aerial("TA-DAY")], "Shuffle": "$null"]],
+            "Idle": ["Content": ["Choices": [aerial("TA-DAY")], "Shuffle": "$null"]],
+            "Type": "individual",
+        ]
+        var store = Fixtures.store(aerial("TA-EVENING"))
+        store["AllSpacesAndDisplays"] = "$null"
+        store["Displays"] = ["D1": display]
+        let paths = try Fixtures.paths(store: store)
+        try Fixtures.download(["TA-EVENING"], into: paths)
+
+        let result = try switcher(paths).sync(set: set, config: config, at: Fixtures.date(19), calendar: Fixtures.calendar)
+        #expect(result == .switched(to: set.aerial(for: .evening)!))
+        #expect(try WallpaperStore(paths: paths).state() == .aerial(assetID: "TA-EVENING"))
+    }
+
+    /// "Show on all Spaces" off: each space keeps its own wallpaper, per display, a level down.
+    @Test func switchesEachSpace() throws {
+        let linked = { (choice: [String: Any]) -> [String: Any] in
+            ["Linked": ["Content": ["Choices": [choice], "Shuffle": "$null"]], "Type": "linked"]
+        }
+        let store: [String: Any] = [
+            "AllSpacesAndDisplays": "$null",
+            "SystemDefault": linked(Fixtures.defaultChoice),
+            "Displays": ["D1": linked(Fixtures.imageChoice)],
+            "Spaces": ["S1": ["Default": linked(Fixtures.imageChoice), "Displays": ["D1": linked(Fixtures.defaultChoice)]]],
+        ]
+        let paths = try Fixtures.paths(store: store)
+        try Fixtures.download(["TA-EVENING"], into: paths)
+
+        #expect(try switcher(paths).sync(set: set, config: config, at: Fixtures.date(19), calendar: Fixtures.calendar) == .switched(to: set.aerial(for: .evening)!))
+        let saved = NSDictionary(contentsOf: paths.store)!
+        let choice = (saved.value(forKeyPath: "Spaces.S1.Displays.D1.Linked.Content.Choices") as! [NSDictionary])[0]
+        #expect(choice["Provider"] as? String == "com.apple.wallpaper.choice.aerials")
+        #expect(try WallpaperStore(paths: paths).state() == .aerial(assetID: "TA-EVENING"))
+    }
+
     @Test func waitsForTheDownload() throws {
         let paths = try Fixtures.paths(store: Fixtures.store(Fixtures.imageChoice))
         let result = try switcher(paths).sync(set: set, config: config, at: Fixtures.date(13), calendar: Fixtures.calendar)
